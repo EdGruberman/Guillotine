@@ -3,5 +3,6 @@ heads:
   PLAYER:
     PLAYER: 100.0
     (default): 2.5
+describe: '-> §7{1}''''s Head' # 1 = Skull Owner
 reload: '-> §7{1} plugin §2reloaded' # 1 = Plugin Name
 version: @VERSION@

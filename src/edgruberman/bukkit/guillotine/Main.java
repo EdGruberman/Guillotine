@@ -7,6 +7,7 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.HandlerList;
 
 import edgruberman.bukkit.guillotine.commands.Reload;
 import edgruberman.bukkit.guillotine.messaging.ConfigurationCourier;
@@ -19,7 +20,7 @@ public final class Main extends CustomPlugin {
     public static ConfigurationCourier courier;
 
     @Override
-    public void onLoad() { this.putConfigMinimum("1.0.0"); }
+    public void onLoad() { this.putConfigMinimum("1.1.0"); }
 
     @Override
     public void onEnable() {
@@ -59,6 +60,8 @@ public final class Main extends CustomPlugin {
     @Override
     public void onDisable() {
         Main.courier = null;
+        HandlerList.unregisterAll(this);
+
     }
 
     private EntityType parseEntityType(final String name) {

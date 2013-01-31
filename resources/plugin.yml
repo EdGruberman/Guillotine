@@ -7,7 +7,7 @@ main: edgruberman.bukkit.guillotine.Main
 commands:
   'guillotine:reload':
     description: Reload Guillotine plugin
-    permission: decapitation.reload
+    permission: guillotine.reload
     usage: /<command>
 permissions:
   guillotine.reload:
