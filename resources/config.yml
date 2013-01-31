@@ -1,0 +1,7 @@
+log-level: INFO
+heads:
+  PLAYER:
+    PLAYER: 100.0
+    (default): 2.5
+reload: '-> §7{1} plugin §2reloaded' # 1 = Plugin Name
+version: @VERSION@

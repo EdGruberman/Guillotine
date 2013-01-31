@@ -1,0 +1,15 @@
+name: Guillotine
+version: @VERSION@
+description: Drop heads upon death
+author: EdGruberman (ed@rjump.com)
+website: http://github.com/EdGruberman/Guillotine
+main: edgruberman.bukkit.guillotine.Main
+commands:
+  'guillotine:reload':
+    description: Reload Guillotine plugin
+    permission: decapitation.reload
+    usage: /<command>
+permissions:
+  guillotine.reload:
+    description: Can use reload command
+    default: op
