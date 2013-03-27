@@ -43,7 +43,7 @@ public final class Executioner implements Listener {
         // randomize creation of head according to rates for killer
         final EntityDamageByEntityEvent cause = (EntityDamageByEntityEvent) last;
         final Double rate = rates.get(cause.getDamager().getType());
-        if (rate == null || (rate < 100 && rate <= this.rng.nextDouble())) return;
+        if (rate == null || (rate < 1 && rate <= this.rng.nextDouble())) return;
 
         // create head
         final ItemStack skull = SkullType.of(death.getEntity()).toItemStack();
