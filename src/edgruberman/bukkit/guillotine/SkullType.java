@@ -14,24 +14,6 @@ public enum SkullType {
     , CREEPER(4)
     ;
 
-
-
-    public static SkullType of(final Entity entity) {
-        switch (entity.getType()) {
-        case SKELETON:
-            switch (((Skeleton) entity).getSkeletonType()) {
-            case WITHER: return SkullType.WITHER;
-            default: return SkullType.SKELETON;
-            }
-        case ZOMBIE: return SkullType.ZOMBIE;
-        case PLAYER: return SkullType.HUMAN;
-        case CREEPER: return SkullType.CREEPER;
-        default: return null;
-        }
-    }
-
-
-
     private final int itemData;
 
     private SkullType(final int itemData) {
@@ -48,6 +30,20 @@ public enum SkullType {
 
     public ItemStack toItemStack(final int quantity) {
         return new ItemStack(Material.SKULL_ITEM, quantity, (short) this.itemData);
+    }
+
+    public static SkullType of(final Entity entity) {
+        switch (entity.getType()) {
+        case SKELETON:
+            switch (((Skeleton) entity).getSkeletonType()) {
+            case WITHER: return SkullType.WITHER;
+            default: return SkullType.SKELETON;
+            }
+        case ZOMBIE: return SkullType.ZOMBIE;
+        case PLAYER: return SkullType.HUMAN;
+        case CREEPER: return SkullType.CREEPER;
+        default: return null;
+        }
     }
 
 }
