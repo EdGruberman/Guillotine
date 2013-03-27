@@ -1,5 +1,5 @@
 log-level: INFO
-heads:
+heads: # <EntityTypeVictim>.<EntityTypeKiller>: <Chance>
   PLAYER:
     PLAYER: 100.0
     (default): 2.5
