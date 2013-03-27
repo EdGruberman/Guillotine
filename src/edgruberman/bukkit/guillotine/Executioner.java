@@ -24,7 +24,7 @@ public final class Executioner implements Listener {
 
     private final Random rng = new Random();
 
-    /** (victim, (killer, rate)) */
+    /** (victim, (killer, rate)) null victim is default for all victims, null killer is default chance for victim */
     private final Map<EntityType, Map<EntityType, Double>> instructions = new HashMap<EntityType, Map<EntityType, Double>>();
 
     public void putInstruction(final EntityType type, final Map<EntityType, Double> rates) {
@@ -34,15 +34,15 @@ public final class Executioner implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDeathByEntity(final EntityDeathEvent death) {
         // ignore events when no applicable instruction exists for victim
-        Map<EntityType, Double> rates = this.instructions.get(death.getEntityType());
-        if (rates == null) rates = this.instructions.get(null);
-        if (rates == null) return;
+        Map<EntityType, Double> killers = this.instructions.get(death.getEntityType());
+        if (killers == null) killers = this.instructions.get(null);
+        if (killers == null) return;
         final EntityDamageEvent last = death.getEntity().getLastDamageCause();
         if (!(last instanceof EntityDamageByEntityEvent)) return;
 
         // randomize creation of head according to rates for killer
         final EntityDamageByEntityEvent cause = (EntityDamageByEntityEvent) last;
-        final Double rate = rates.get(cause.getDamager().getType());
+        final Double rate = killers.get(cause.getDamager().getType());
         if (rate == null || (rate < 1 && rate <= this.rng.nextDouble())) return;
 
         // create head
