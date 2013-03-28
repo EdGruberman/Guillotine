@@ -48,14 +48,16 @@ public final class Executioner implements Listener {
         if (killers == null) killers = this.instructions.get(null);
         if (killers == null) return;
 
-        // ignore if killer is not an entity
+        // identify killer
         final EntityDamageEvent last = death.getEntity().getLastDamageCause();
-        if (!(last instanceof EntityDamageByEntityEvent)) return;
+        Entity killer = null;
+        if (last instanceof EntityDamageByEntityEvent) {
+            final EntityDamageByEntityEvent cause = (EntityDamageByEntityEvent) last;
+            killer = Executioner.origin(cause.getDamager());
+        }
 
-        // ignore when no applicable rate exists for killer
-        final EntityDamageByEntityEvent cause = (EntityDamageByEntityEvent) last;
-        final Entity origin = Executioner.origin(cause.getDamager());
-        Double rate = killers.get(( origin != null ? origin.getType() : null ));
+        // ignore when no applicable rate exists for killer and no default rate exists for victim
+        Double rate = killers.get(( killer != null ? killer.getType() : null ));
         if (rate == null) rate = killers.get(null);
         if (rate == null) return;
 
@@ -63,7 +65,7 @@ public final class Executioner implements Listener {
         final double picked = rate < 1 ? this.rng.nextDouble() : 1;
         if (rate < picked) {
             this.plugin.getLogger().log(Level.FINEST, "Missed head drop chance; victim: {0}, killer: {1}, rate: {2,number,#.#%}, picked: {3,number,#.##%}"
-                    , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(cause.getDamager()), rate, picked });
+                    , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(killer), rate, picked });
             return;
         }
 
@@ -79,8 +81,8 @@ public final class Executioner implements Listener {
         // drop head
         final Location drop = death.getEntity().getLocation();
         drop.getWorld().dropItemNaturally(drop, skull);
-        this.plugin.getLogger().log(Level.FINEST, "Head dropped; victim: {0}, killer: {1}, rate: {2,number,#.#%}, picked: {3,number,#.##%}"
-                , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(cause.getDamager()), rate, picked });
+        this.plugin.getLogger().log(Level.FINER, "Head dropped; victim: {0}, killer: {1}, rate: {2,number,#.#%}, picked: {3,number,#.##%}"
+                , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(killer), rate, picked });
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR) // give everything else a chance to cancel it
@@ -110,7 +112,7 @@ public final class Executioner implements Listener {
         final Entity source = Executioner.origin(entity);
 
         if (source == null) {
-            return "null(dispenser?)";
+            return "null";
 
         } else if (source.getType() == EntityType.PLAYER) {
             return source.getType().name() + "(" + ((Player) source).getName() + ")";
