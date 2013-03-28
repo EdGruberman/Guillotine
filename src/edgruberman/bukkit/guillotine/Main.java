@@ -20,14 +20,14 @@ public final class Main extends CustomPlugin {
     public static ConfigurationCourier courier;
 
     @Override
-    public void onLoad() { this.putConfigMinimum("1.1.0"); }
+    public void onLoad() { this.putConfigMinimum("1.1.1a0"); }
 
     @Override
     public void onEnable() {
         this.reloadConfig();
         Main.courier = ConfigurationCourier.Factory.create(this).build();
 
-        final Executioner executioner = new Executioner();
+        final Executioner executioner = new Executioner(this);
         final ConfigurationSection heads = this.getConfig().getConfigurationSection("heads");
         for (final String keyVictim : heads.getKeys(false)) {
             final EntityType victim = ( !keyVictim.equals(Main.KEY_DEFAULT) ? this.parseEntityType(keyVictim) : null );
@@ -43,11 +43,11 @@ public final class Main extends CustomPlugin {
 
             executioner.putInstruction(victim, rates);
             for (final Map.Entry<EntityType, Double> rate : rates.entrySet())
-                this.getLogger().log(Level.CONFIG, "Executioner instruction for {0} victim of {1}: {2}"
+                this.getLogger().log(Level.CONFIG, "Executioner instruction; victim: {0}, killer: {1}, rate: {2,number,#.#%}"
                         , new Object[] {
                             ( victim != null ? victim.name() : Main.KEY_DEFAULT )
                             , ( rate.getKey() != null ? rate.getKey().name() : Main.KEY_DEFAULT )
-                            , String.valueOf(rate.getValue() * 100D) + "%"
+                            , rate.getValue()
                         }
                 );
         }
