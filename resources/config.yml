@@ -1,14 +1,14 @@
 log-level: INFO
-heads: # <EntityTypeVictim>.<EntityTypeKiller>: <Chance>
-  PLAYER:
-    PLAYER: 100.0
-    (default): 2.5
-  SKELETON:
-    (default): 2.5
-  ZOMBIE:
-    (default): 2.5
-  CREEPER:
-    (default): 2.5
+decapitations:
+  'PvP':
+    victims:
+      'Player':
+        entity-type: PLAYER
+    causes:
+      'Player':
+        entity-type: PLAYER
+  'Rarely':
+    chance: 2.5
 describe: '§f-> §f{1}§7''''s Head' # 0 = Generated, 1 = Skull Owner
 reload: '§f-> §2Reloaded §7{1} plugin' # 0 = Generated, 1 = Plugin Name
 version: @VERSION@

@@ -1,88 +1,82 @@
 package edgruberman.bukkit.guillotine;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Skull;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 
-/** makes heads appear from dead bodies **/
+/** drops heads from bodies **/
 public final class Executioner implements Listener {
 
-    private final Random rng = new Random();
+    private static final Random RNG = new Random();
+
     private final Plugin plugin;
 
-    /** (victim, (killer, rate)) null victim is default for all victims, null killer is default chance for victim */
-    private final Map<EntityType, Map<EntityType, Double>> instructions = new HashMap<EntityType, Map<EntityType, Double>>();
+    private final List<DecapitationRule> rules = new ArrayList<DecapitationRule>();
 
     Executioner(final Plugin plugin) {
         this.plugin = plugin;
     }
 
-    public void putInstruction(final EntityType type, final Map<EntityType, Double> rates) {
-        this.instructions.put(type, rates);
+    public void addRule(final DecapitationRule rule) {
+        this.rules.add(rule);
+    }
+
+    public List<DecapitationRule> getRules() {
+        return this.rules;
+    }
+
+    private DecapitationRule applicable(final EntityDeathEvent death) {
+        for (final DecapitationRule rule : this.rules) {
+            if (rule.applies(death)) return rule;
+        }
+        return DecapitationRule.NOT_APPLICABLE;
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR) // give everything else a chance to cancel it
     public void onEntityDeathByEntity(final EntityDeathEvent death) {
-        // ignore events when no applicable instruction exists for victim
-        Map<EntityType, Double> killers = this.instructions.get(death.getEntityType());
-        if (killers == null) killers = this.instructions.get(null);
-        if (killers == null) return;
+        final DecapitationRule applicable = this.applicable(death);
+        if (applicable == DecapitationRule.NOT_APPLICABLE) return;
 
-        // identify killer
-        final EntityDamageEvent last = death.getEntity().getLastDamageCause();
-        Entity killer = null;
-        if (last instanceof EntityDamageByEntityEvent) {
-            final EntityDamageByEntityEvent cause = (EntityDamageByEntityEvent) last;
-            killer = Executioner.origin(cause.getDamager());
-        }
-
-        // ignore when no applicable rate exists for killer and no default rate exists for victim
-        Double rate = killers.get(( killer != null ? killer.getType() : null ));
-        if (rate == null) rate = killers.get(null);
-        if (rate == null) return;
+        final Entity victim = death.getEntity();
+        final Entity killer = Executioner.origin(death);
+        final double chance = applicable.getChance(killer);
 
         // randomize creation of head
-        final double picked = rate < 1 ? this.rng.nextDouble() : 1;
-        if (rate < picked) {
-            this.plugin.getLogger().log(Level.FINEST, "Missed head drop chance; victim: {0}, killer: {1}, rate: {2,number,#.#%}, picked: {3,number,#.##%}"
-                    , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(killer), rate, picked });
+        final double picked = chance < 1 ? Executioner.RNG.nextDouble() : 1;
+        if (chance < picked) {
+            if (this.plugin.getLogger().isLoggable(Level.FINEST)) {
+                this.plugin.getLogger().log(Level.FINEST, "Missed head drop chance; rule: {0}, victim: {1}, killer: {2}, cause: {3}, chance: {4,number,#.#%}, picked: {5,number,#.##%}"
+                        , new Object[] { applicable.getDescription(), Executioner.describe(victim), Executioner.describe(killer), Executioner.describe(victim.getLastDamageCause()), chance, picked });
+            }
             return;
         }
 
-        // create head
-        final ItemStack skull = SkullType.of(death.getEntity()).toItemStack();
-        final SkullMeta meta = (SkullMeta) skull.getItemMeta();
-        if (SkullType.HUMAN.matches(skull)) {
-            final String victim = ( death.getEntity() instanceof Player ? ((Player) death.getEntity()).getName() : null );
-            meta.setOwner(victim);
-        }
-        skull.setItemMeta(meta);
-
         // drop head
-        final Location drop = death.getEntity().getLocation();
-        drop.getWorld().dropItemNaturally(drop, skull);
-        this.plugin.getLogger().log(Level.FINER, "Head dropped; victim: {0}, killer: {1}, rate: {2,number,#.#%}, picked: {3,number,#.##%}"
-                , new Object[] { new LazyDescriber(death.getEntity()), new LazyDescriber(killer), rate, picked });
+        final Location drop = victim.getLocation();
+        drop.getWorld().dropItemNaturally(drop, SkullType.asItemStack(victim));
+        if (this.plugin.getLogger().isLoggable(Level.FINER)) {
+            this.plugin.getLogger().log(Level.FINER, "Head dropped; rule: {0}, victim: {1}, killer: {2}, cause: {3}, chance: {4,number,#.#%}, picked: {5,number,#.##%}"
+                    , new Object[] { applicable.getDescription(), Executioner.describe(victim), Executioner.describe(killer), Executioner.describe(victim.getLastDamageCause()), chance, picked });
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR) // give everything else a chance to cancel it
@@ -97,6 +91,17 @@ public final class Executioner implements Listener {
 
 
 
+    /** @return killer {@link #origin(Entity) origin} */
+    public static Entity origin(final EntityDeathEvent death) {
+        final EntityDamageEvent last = death.getEntity().getLastDamageCause();
+        if (!(last instanceof EntityDamageByEntityEvent)) return null;
+
+        final EntityDamageByEntityEvent lastByEntity = (EntityDamageByEntityEvent) last;
+        final Entity damager = lastByEntity.getDamager();
+
+        return Executioner.origin(damager);
+    }
+
     /** @return origin of entity (shooter for projectiles, null for dispensers) */
     private static Entity origin(final Entity entity) {
         if (entity instanceof Projectile) {
@@ -107,37 +112,29 @@ public final class Executioner implements Listener {
         return entity;
     }
 
-    /** @return human readable description of entity */
-    private static String describeOrigin(final Entity entity) {
-        final Entity source = Executioner.origin(entity);
+    /** @return human readable description of {@link #origin(Entity) origin} */
+    private static String describe(final Entity entity) {
+        if (entity == null) {
+            return null;
 
-        if (source == null) {
-            return "null";
-
-        } else if (source.getType() == EntityType.PLAYER) {
-            return source.getType().name() + "(" + ((Player) source).getName() + ")";
+        } else if (entity instanceof HumanEntity) {
+            final HumanEntity human = (HumanEntity) entity;
+            final int level = human.getItemInHand().getEnchantmentLevel(Enchantment.LOOT_BONUS_MOBS);
+            return entity.getType().name() + "(" + human.getName() + ( level > 0 ? "/" + Enchantment.LOOT_BONUS_MOBS.getName() + ":" + level : "" ) + ")";
 
         }
 
-        return source.getType().name();
+        return entity.getType().name();
     }
 
-
-
-    /** delays expansion of string describing entity in the case where logging might not display it */
-    private static class LazyDescriber {
-
-        private final Entity entity;
-
-        private LazyDescriber(final Entity entity) {
-            this.entity = entity;
+    private static String describe(final EntityDamageEvent damage) {
+        String block = null;
+        if (damage instanceof EntityDamageByBlockEvent) {
+            final EntityDamageByBlockEvent dbb = (EntityDamageByBlockEvent) damage;
+            block = dbb.getDamager().getType().name() + ( dbb.getDamager().getData() > 0 ? "/" + dbb.getDamager().getData() : "" );
         }
 
-        @Override
-        public String toString() {
-            return Executioner.describeOrigin(this.entity);
-        }
-
+        return damage.getCause().name() + ( block != null ? " (" + block + ")" : "" );
     }
 
 }
