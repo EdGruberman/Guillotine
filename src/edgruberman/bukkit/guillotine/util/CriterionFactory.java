@@ -11,8 +11,13 @@ import org.bukkit.plugin.Plugin;
  */
 public abstract class CriterionFactory<C extends Criterion<?>> {
 
+    /** implementation factory method */
+    public abstract C create(Plugin plugin, ConfigurationSection config) throws InstantiationException;
+
+
+
     /** decoupled standardized implementation construction from class name */
-    public static Criterion<?> create(final String className, final Package defaultPackage, final Plugin plugin, final ConfigurationSection config)
+    public static <O extends Criterion<?>> O create(final String className, final Package defaultPackage, final Plugin plugin, final ConfigurationSection config)
             throws ClassNotFoundException, ClassCastException, IllegalArgumentException, SecurityException
                     , InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException
             {
@@ -20,30 +25,26 @@ public abstract class CriterionFactory<C extends Criterion<?>> {
         // find the implementation class
         Class<?> implementation;
         try {
-            implementation = Class.forName(defaultPackage.getName() + "." + className).asSubclass(Criterion.class);
+            implementation = Class.forName(defaultPackage.getName() + "." + className);
         } catch (final Exception e) {
-            implementation = Class.forName(className).asSubclass(Criterion.class);
+            implementation = Class.forName(className);
         }
+        @SuppressWarnings("unchecked")
+        final Class<O> criterion = (Class<O>) implementation.asSubclass(Criterion.class);
 
         // find the nested factory and instantiate
-        CriterionFactory<?> factory = null;
-        for (final Class<?> nested : implementation.getDeclaredClasses()) {
+        CriterionFactory<O> factory = null;
+        for (final Class<?> nested : criterion.getDeclaredClasses()) {
             if (CriterionFactory.class.isAssignableFrom(nested)) {
                 @SuppressWarnings("unchecked")
-                final Class<? extends CriterionFactory<?>> cls = (Class<? extends CriterionFactory<?>>) nested.asSubclass(CriterionFactory.class);
+                final Class<? extends CriterionFactory<O>> cls = (Class<? extends CriterionFactory<O>>) nested.asSubclass(CriterionFactory.class);
                 factory = cls.getConstructor().newInstance();
                 break;
             }
         }
         if (factory == null) throw new ClassNotFoundException("unable to find CriterionFactory in: " + className);
 
-        // instantiate the criterion
         return factory.create(plugin, config);
     }
-
-
-
-    /** implementation factory method */
-    public abstract C create(Plugin plugin, ConfigurationSection config) throws InstantiationException;
 
 }

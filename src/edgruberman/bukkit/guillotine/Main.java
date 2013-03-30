@@ -88,10 +88,8 @@ public final class Main extends CustomPlugin {
             final String className = entry.getString("class", defaultClass.getSimpleName());
 
             try {
-                final Criterion<?> criterion = CriterionFactory.create(className, Main.DEFAULT_CRITERIA, this, entry);
-                @SuppressWarnings("unchecked")
-                final Criterion<C> cast = (Criterion<C>) criterion;
-                result.add(cast);
+                final Criterion<C> criterion = CriterionFactory.create(className, Main.DEFAULT_CRITERIA, this, entry);
+                result.add(criterion);
             } catch (final Exception e) {
                 this.getLogger().log(Level.WARNING, "Unable to create Criterion: {0}; {1}", new Object[] { entry.getCurrentPath(), e });
                 this.getLogger().log(Level.FINE, "Criterion creation exception detail", e);
