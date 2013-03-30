@@ -11,6 +11,7 @@ import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,9 +20,13 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+
+import edgruberman.bukkit.guillotine.util.EntitySubtype;
 
 /** drops heads from bodies **/
 public final class Executioner implements Listener {
@@ -61,7 +66,7 @@ public final class Executioner implements Listener {
         final double chance = applicable.getChance(killer);
 
         // randomize creation of head
-        final double picked = chance < 1 ? Executioner.RNG.nextDouble() : 1;
+        final double picked = ( chance < 0 ? 0 : ( chance < 1 ? Executioner.RNG.nextDouble() : 1 ) );
         if (chance < picked) {
             if (this.plugin.getLogger().isLoggable(Level.FINEST)) {
                 this.plugin.getLogger().log(Level.FINEST, "Missed head drop chance; rule: {0}, victim: {1}, killer: {2}, cause: {3}, chance: {4,number,#.#%}, picked: {5,number,#.##%}"
@@ -119,22 +124,44 @@ public final class Executioner implements Listener {
 
         } else if (entity instanceof HumanEntity) {
             final HumanEntity human = (HumanEntity) entity;
-            final int level = human.getItemInHand().getEnchantmentLevel(Enchantment.LOOT_BONUS_MOBS);
-            return entity.getType().name() + "(" + human.getName() + ( level > 0 ? "/" + Enchantment.LOOT_BONUS_MOBS.getName() + ":" + level : "" ) + ")";
+            return entity.getType().name() + "(" + human.getName() + ")";
 
+        } else {
+            try {
+                final EntitySubtype subtype = EntitySubtype.of(entity);
+                return entity.getType().name() + "(" + subtype.getName() + ")";
+
+            } catch (final IllegalArgumentException e) {
+                // ignore to let processing continue
+            }
         }
 
         return entity.getType().name();
     }
 
-    private static String describe(final EntityDamageEvent damage) {
-        String block = null;
+    private static StringBuilder describe(final EntityDamageEvent damage) {
+        final StringBuilder result = new StringBuilder();
+        result.append(damage.getCause().name());
+
         if (damage instanceof EntityDamageByBlockEvent) {
             final EntityDamageByBlockEvent dbb = (EntityDamageByBlockEvent) damage;
-            block = dbb.getDamager().getType().name() + ( dbb.getDamager().getData() > 0 ? "/" + dbb.getDamager().getData() : "" );
+            result.append("(").append(( dbb.getDamager() != null ? dbb.getDamager().getType().name() : null ));
+            if (dbb.getDamager().getData() > 0) result.append('/').append(dbb.getDamager().getData());
+            result.append(")");
+
+        } else if (damage.getCause().equals(DamageCause.ENTITY_ATTACK)) {
+            final EntityDamageByEntityEvent dbe = (EntityDamageByEntityEvent) damage;
+            if (dbe.getDamager() instanceof LivingEntity) {
+                final LivingEntity living = (LivingEntity) dbe.getDamager();
+                final ItemStack held = living.getEquipment().getItemInHand();
+                if (held != null && held.getTypeId() != Material.AIR.getId()){
+                    final int level = held.getEnchantmentLevel(Enchantment.LOOT_BONUS_MOBS);
+                    if (level > 0) result.append("(").append(Enchantment.LOOT_BONUS_MOBS.getName()).append(":").append(level).append(")");
+                }
+            }
         }
 
-        return damage.getCause().name() + ( block != null ? " (" + block + ")" : "" );
+        return result;
     }
 
 }

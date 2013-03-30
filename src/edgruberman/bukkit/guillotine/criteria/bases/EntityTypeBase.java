@@ -18,14 +18,19 @@ public class EntityTypeBase {
     public EntityTypeBase(final ConfigurationSection config) throws InstantiationException {
         this.description = config.getName();
         final String et = config.getString("entity-type");
+        if (et == null) {
+            this.type = null;
+            return;
+        }
+
         try {
             this.type = EntityType.valueOf(et);
         } catch (final IllegalArgumentException e) {
-            throw new InstantiationException("Unrecognized EntityType: " + et + "; " + e);
+            throw new InstantiationException("unrecognized EntityType: " + et + "; " + e);
         }
     }
 
-    /** @return true if EntityType is not null and matches; false otherwise */
+    /** @return true if Entity is not null and matches EntityType; false otherwise */
     public boolean matches(final Entity other) {
         if (other == null) return false; // can't match an entity that doesn't exist
         if (this.type == null) return true; // wildcard match for any entity type

@@ -40,7 +40,7 @@ public final class Main extends CustomPlugin {
     public static ConfigurationCourier courier;
 
     @Override
-    public void onLoad() { this.putConfigMinimum("2.0.0"); }
+    public void onLoad() { this.putConfigMinimum("2.1.0"); }
 
     @Override
     public void onEnable() {
@@ -51,8 +51,9 @@ public final class Main extends CustomPlugin {
         final ConfigurationSection decaps = this.getConfig().getConfigurationSection("decapitations");
         for (final String key : decaps.getKeys(false)) {
             final ConfigurationSection section = decaps.getConfigurationSection(key);
-            final double chance = section.getDouble("chance", 100D) / 100D;
-            final double lootingFactor = section.getDouble("looting-factor", DecapitationRule.DEFAULT_LOOTING_FACTOR);
+            final boolean drop = section.getBoolean("drop", DecapitationRule.DEFAULT_DROP);
+            final double chance = drop ? section.getDouble("chance", 100D) / 100D : DecapitationRule.DISABLE_CHANCE;
+            final double lootingFactor = drop ? section.getDouble("looting-factor", DecapitationRule.DEFAULT_LOOTING_FACTOR) : DecapitationRule.DISABLE_LOOTING_FACTOR;
             final DecapitationRule rule = new DecapitationRule(key, chance, lootingFactor);
 
             final ConfigurationSection victims = section.getConfigurationSection("victims");

@@ -15,7 +15,12 @@ import edgruberman.bukkit.guillotine.util.CriteriaList;
 
 public class DecapitationRule {
 
+    public static final boolean DEFAULT_DROP = true;
     public static final double DEFAULT_LOOTING_FACTOR = 0.005D;
+
+    public static final double DISABLE_LOOTING_FACTOR = 0D;
+    public static final double DISABLE_CHANCE = -1D;
+
     public static final DecapitationRule NOT_APPLICABLE = new NotApplicable();
 
     private final String description;

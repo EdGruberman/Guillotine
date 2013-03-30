@@ -1,13 +1,19 @@
 log-level: INFO
 decapitations:
-  'PvP':
+  'Always for PvP':
     victims:
       'Player':
         entity-type: PLAYER
     causes:
       'Player':
         entity-type: PLAYER
-  'Rarely':
+  'Let vanilla handle Wither Skeletons':
+    drop: false
+    victims:
+      'Wither Skeleton':
+        class: VictimSubtype
+        entity-subtype: SKELETON_WITHER
+  'Rarely for all others':
     chance: 2.5
 describe: '§f-> §f{1}§7''''s Head' # 0 = Generated, 1 = Skull Owner
 reload: '§f-> §2Reloaded §7{1} plugin' # 0 = Generated, 1 = Plugin Name
