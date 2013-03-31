@@ -145,9 +145,11 @@ public final class Executioner implements Listener {
 
         if (damage instanceof EntityDamageByBlockEvent) {
             final EntityDamageByBlockEvent dbb = (EntityDamageByBlockEvent) damage;
-            result.append("(").append(( dbb.getDamager() != null ? dbb.getDamager().getType().name() : null ));
-            if (dbb.getDamager().getData() > 0) result.append('/').append(dbb.getDamager().getData());
-            result.append(")");
+            if (dbb.getDamager() != null) {
+                result.append("(").append(dbb.getDamager().getType().name());
+                if (dbb.getDamager().getData() > 0) result.append('/').append(dbb.getDamager().getData());
+                result.append(")");
+            }
 
         } else if (damage.getCause().equals(DamageCause.ENTITY_ATTACK)) {
             final EntityDamageByEntityEvent dbe = (EntityDamageByEntityEvent) damage;
